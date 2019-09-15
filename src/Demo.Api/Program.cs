@@ -4,6 +4,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sentry.Extensibility;
 
 namespace Demo.Api
 {
@@ -33,6 +34,7 @@ namespace Demo.Api
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureServices(s => s.AddSingleton<ISentryEventExceptionProcessor, SqlExceptionProcessor>())
                 .UseStartup<Startup>()
                 .UseSentry();
     }
