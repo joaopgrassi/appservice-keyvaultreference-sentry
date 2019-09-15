@@ -1,5 +1,6 @@
 using System.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Sentry;
 using Sentry.Extensibility;
@@ -8,15 +9,15 @@ namespace Demo.Api
 {
     internal class SqlExceptionProcessor :  SentryEventExceptionProcessor<SqlException>
     {
-        private readonly NamedConnectionStringResolver _resolver;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<SqlExceptionProcessor> _logger;
 
         public SqlExceptionProcessor(
-            NamedConnectionStringResolver resolver,
+            IConfiguration configuration,
             ILogger<SqlExceptionProcessor> logger
         )
         {
-            _resolver = resolver;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -29,15 +30,14 @@ namespace Demo.Api
             {
                 if (exception.Number == 18456)
                 {
-                    var connString = _resolver.ResolveConnectionString("MoviesDB");
+                    var connString = _configuration.GetConnectionString("MoviesDB");
                     var builder = new SqlConnectionStringBuilder(connString);
-                    _logger.LogInformation(
-                        "SQL Exception due to invalid credentials: {credentials}.",
-                        new
-                        {
-                            Login = builder["secret"].ToString().Substring(0, 4),
-                            Secret = builder["login"]
-                        });
+                    sentryEvent.Contexts["sql_exception"] = 
+                    new
+                    {
+                        Login = builder["secret"].ToString().Substring(0, 4),
+                        Secret = builder["login"]
+                    };
                 }
             }
         }
